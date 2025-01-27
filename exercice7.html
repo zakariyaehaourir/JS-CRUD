@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Produits</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        form, table {
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-btn, .delete-btn {
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: #ff9800;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .edit-btn:hover {
+            background-color: #e68900;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+      
+        .head button{
+            background-color: blue;
+        }
+        .head .btns{
+            display: flex;
+            justify-content: space-around;
+            gap: 51px;
+        }
+        .head .btns:nth-child(2){
+            width: 50%;
+        }
+        .zero-prod{
+            text-align: center;
+            color: red;
+            font-size: larger;
+            font-weight: bolder;
+        }
+        .notification {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .notification.success {
+            background-color: #4caf50;
+            color: white;
+        }
+        .notification.error {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ajouter un Produit</h1>
+    <form id="productForm">
+        <label for="libele">Libellé:</label>
+        <input type="text" id="libele" name="libele" required>
+        
+        <label for="price">Prix Unitaire:</label>
+        <input type="number" id="price" name="price" step="0.01" required>
+        
+        <button type="button" onclick="add()">Ajouter</button>
+        <button type="button" onclick="update()" id="btn_modif" style="display: none;">Modifier</button>
+
+    </form>
+    
+    <div class="head"><h2>Liste des Produits</h2> <div class="btns"><button onclick="supprimerTous()"> Supprimer Tous</button> <input type="text" placeholder="Search" onkeyup="renderProducts(this.value)"> </div></div>
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>Libellé</th>
+                <th>Prix Unitaire</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+
+    <script>
+
+        let productsForm = document.getElementById("productForm")
+        //let products = [ { libele: "Produit 1", price: 10.00 }, { libele: "Produit 2", price: 20.00 }, { libele: "Produit 3", price: 30.00 }]
+        
+       
+        function renderProducts(term ='') {
+            
+                const productTable = document.getElementById('productTable').getElementsByTagName("tbody")[0];
+                 productTable.innerHTML = '' //vide le contenu du tableau
+                if(localStorage.length > 0){
+                    
+                    
+                    let produitsFromStorage =JSON.parse( localStorage.getItem("listProducts"))
+                    //filter tjrs retourn true chaqu string conteint une chaine vide 'ziko'.includes('') :true
+                     const filteredProducts = produitsFromStorage.filter(prod => 
+                        prod.libele.toLowerCase().includes(term)
+                );
+                    if(filteredProducts.length == 0 && produitsFromStorage.length!=0 ){
+                        productTable.innerHTML = "<span class='zero-prod'> Aucun produit avec ce term de recherche ! </span>" 
+                    }
+                    for (const product of filteredProducts) {
+                        
+                        // document.body.innerHTML += product.price
+                        let row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${product.libele}</td>
+                            <td>${product.price}</td>
+                            <td class="action-buttons">
+                                <button class="edit-btn" onclick="modifier_formulaire(${produitsFromStorage.indexOf(product)})">Modifier</button>
+                                <button class="delete-btn" onclick="supprimer(${produitsFromStorage.indexOf(product)})">Supprimer</button>
+                            </td>
+                        `;
+                    productTable.appendChild(row);
+              
+                    
+                }
+                }
+                //aucun produit
+                else{
+                    productTable.innerHTML = "<tr> <td colspan='3' style='text-align:center ;color:blue; padding-top:20px; font-weight:bolder;'>Aucun Produit, Ajouter des produits !</td> </tr>"
+                }
+              
+                
+        }
+
+        
+        function add(){
+            let libele = document.getElementById("libele").value
+            let price = parseFloat(document.getElementById("price").value)
+       
+            if(libele != "" && price !=""){
+                let produitsFromStorage =JSON.parse( window.localStorage.getItem("listProducts") ) || []
+                produitsFromStorage.push({libele , price})
+                window.localStorage.setItem("listProducts" , JSON.stringify(produitsFromStorage))
+                // products.push({libele , price})
+                productsForm.reset()
+                
+                renderProducts()
+                notif("Produit ajouter avec succès !")
+            }
+            else{
+                alert("rempliser les champs")
+
+            }
+            
+        }
+        function supprimer(index){
+           
+            let produitsFromStorage  =JSON.parse( localStorage.getItem("listProducts"))//khas njebha array wnslice fi array wseftha f setItem mn jdid
+            produitsFromStorage.splice(index,1)
+            //send the new list of products to storage
+            window.localStorage.setItem("listProducts" , JSON.stringify(produitsFromStorage))
+            renderProducts()
+            notif("Produit supprimer avec succès !" , 'error')
+          
+            
+            
+        }
+        function supprimerTous(){
+           if(window.localStorage.length > 0 && confirm("Êtes-vous sûr de vouloir tout supprimer tous?")){
+                window.localStorage.clear();
+                notif("Tous les produits sont supprimer avec succès")
+                renderProducts()
+           }else if(window.localStorage.length < 0){
+            document.getElementsByTagName("tbody")[0].innerHTML = "Aucun produit a supprimer !"
+            document.getElementsByTagName("tbody")[0].listStyle = "color:red ; text-align:center"
+
+           }
+
+        }
+        function modifier_formulaire(index){
+            document.getElementById("btn_modif").style.display = "inline-block"
+             let produitsFromStorage  =JSON.parse( localStorage.getItem("listProducts"))
+           document.getElementById('libele').value = produitsFromStorage[index].libele 
+           document.getElementById('price').value = produitsFromStorage[index].price
+           editIndex =index
+        
+        }
+       function update() { 
+        let produitsFromStorage  =JSON.parse( localStorage.getItem("listProducts"))
+        const libele = document.getElementById('libele').value 
+       const price = parseFloat(document.getElementById('price').value); 
+       if (libele && !isNaN(price)) 
+       { 
+        produitsFromStorage[editIndex] = { libele, price }
+        window.localStorage.setItem("listProducts" , JSON.stringify( produitsFromStorage )) //send new list to storage
+        renderProducts();
+        notif("Produit modifié avec succès !")
+        document.getElementById('productForm').reset(); 
+        
+        document.getElementById("btn_modif").style.display = "none";
+     } else 
+     { 
+        alert("Veuillez remplir tous les champs."); 
+
+     } 
+    }
+    function notif(message, type = "success") {
+        const notification = document.createElement("div")
+        notification.className = `notification ${type}`
+        notification.innerText = message
+        document.body.appendChild(notification)
+        setTimeout(() => notification.remove(), 3000)
+    }
+
+        // Appeler renderProducts mnin  DOM ytcharga full
+       window.onload=()=>{
+        renderProducts();
+       }
+    </script>
+</body>
+</html>
